@@ -1,15 +1,15 @@
 package part3_graphs
 
-import java.util.Date
-
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, ClosedShape, FanOutShape2, UniformFanInShape}
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, RunnableGraph, Sink, Source, ZipWith}
+import akka.stream.{ActorMaterializer, ClosedShape, FanOutShape2, UniformFanInShape}
+
+import java.util.Date
 
 object MoreOpenGraphs extends App {
 
-  implicit val system = ActorSystem("MoreOpenGraphs")
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("MoreOpenGraphs")
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   /*
     Example: Max3 operator
@@ -75,14 +75,17 @@ object MoreOpenGraphs extends App {
 
   case class Transaction(id: String, source: String, recipient: String, amount: Int, date: Date)
 
-  val transactionSource = Source(List(
-    Transaction("5273890572", "Paul", "Jim", 100, new Date),
-    Transaction("3578902532", "Daniel", "Jim", 100000, new Date),
-    Transaction("5489036033", "Jim", "Alice", 7000, new Date)
-  ))
+  val transactionSource = Source(
+    List(
+      Transaction("5273890572", "Paul", "Jim", 100, new Date),
+      Transaction("3578902532", "Daniel", "Jim", 100000, new Date),
+      Transaction("5489036033", "Jim", "Alice", 7000, new Date)
+    )
+  )
 
   val bankProcessor = Sink.foreach[Transaction](println)
-  val suspiciousAnalysisService = Sink.foreach[String](txnId => println(s"Suspicious transaction ID: $txnId"))
+  val suspiciousAnalysisService =
+    Sink.foreach[String](txnId => println(s"Suspicious transaction ID: $txnId"))
 
   // step 1
   val suspiciousTxnStaticGraph = GraphDSL.create() { implicit builder =>

@@ -1,13 +1,13 @@
 package part3_graphs
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, BidiShape, ClosedShape}
 import akka.stream.scaladsl.{Flow, GraphDSL, RunnableGraph, Sink, Source}
+import akka.stream.{ActorMaterializer, BidiShape, ClosedShape}
 
 object BidirectionalFlows extends App {
 
-  implicit val system = ActorSystem("BidirectionalFlows")
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("BidirectionalFlows")
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   /*
     Example: cryptography
@@ -35,11 +35,13 @@ object BidirectionalFlows extends App {
       val unencryptedSourceShape = builder.add(unencryptedSource)
       val encryptedSourceShape = builder.add(encryptedSource)
       val bidi = builder.add(bidiCryptoStaticGraph)
-      val encryptedSinkShape = builder.add(Sink.foreach[String](string => println(s"Encrypted: $string")))
-      val decryptedSinkShape = builder.add(Sink.foreach[String](string => println(s"Decrypted: $string")))
+      val encryptedSinkShape =
+        builder.add(Sink.foreach[String](string => println(s"Encrypted: $string")))
+      val decryptedSinkShape =
+        builder.add(Sink.foreach[String](string => println(s"Decrypted: $string")))
 
-      unencryptedSourceShape  ~> bidi.in1   ;   bidi.out1 ~> encryptedSinkShape
-      decryptedSinkShape      <~ bidi.out2  ;   bidi.in2  <~ encryptedSourceShape
+      unencryptedSourceShape ~> bidi.in1; bidi.out1 ~> encryptedSinkShape
+      decryptedSinkShape <~ bidi.out2; bidi.in2 <~ encryptedSourceShape
 
       ClosedShape
     }

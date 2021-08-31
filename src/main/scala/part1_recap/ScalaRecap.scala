@@ -1,6 +1,7 @@
 package part1_recap
 
 import scala.concurrent.Future
+import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
 object ScalaRecap extends App {
@@ -32,7 +33,7 @@ object ScalaRecap extends App {
   val anIncrementer: Int => Int = (x: Int) => x + 1
   anIncrementer(1)
 
-  List(1,2,3).map(anIncrementer)
+  List(1, 2, 3).map(anIncrementer)
   // HOF: flatMap, filter
   // for-comprehensions
 
@@ -53,8 +54,7 @@ object ScalaRecap extends App {
     case e: Exception => println("I caught one!")
   }
 
-  /**
-    * Scala advanced
+  /** Scala advanced
     */
 
   // multithreading
@@ -69,7 +69,8 @@ object ScalaRecap extends App {
 
   future.onComplete {
     case Success(value) => println(s"I found the meaning of life: $value")
-    case Failure(exception) => println(s"I found $exception while searching for the meaning of life!")
+    case Failure(exception) =>
+      println(s"I found $exception while searching for the meaning of life!")
   } // on SOME thread
 
   val partialFunction: PartialFunction[Int, Int] = {
@@ -87,10 +88,10 @@ object ScalaRecap extends App {
   }
 
   // Implicits!
-  implicit val timeout = 3000
-  def setTimeout(f: () => Unit)(implicit timeout: Int) = f()
+  implicit val timeout: Int = 3000
+  def setTimeout(f: () => Unit)(implicit timeout: Int): Unit = f()
 
-  setTimeout(() => println("timeout"))// other arg list injected by the compiler
+  setTimeout(() => println("timeout")) // other arg list injected by the compiler
 
   // conversions
   // 1) implicit methods
@@ -98,7 +99,7 @@ object ScalaRecap extends App {
     def greet: String = s"Hi, my name is $name"
   }
 
-  implicit def fromStringToPerson(name: String) = Person(name)
+  implicit def fromStringToPerson(name: String): Person = Person(name)
   "Peter".greet
   // fromStringToPerson("Peter").greet
 
@@ -112,17 +113,17 @@ object ScalaRecap extends App {
   // implicit organizations
   // local scope
   implicit val numberOrdering: Ordering[Int] = Ordering.fromLessThan(_ > _)
-  List(1,2,3).sorted //(numberOrdering) => List(3,2,1)
+  List(1, 2, 3).sorted //(numberOrdering) => List(3,2,1)
 
   // imported scope
 
   // companion objects of the types involved in the call
   object Person {
-    implicit val personOrdering: Ordering[Person] = Ordering.fromLessThan((a, b) => a.name.compareTo(b.name) < 0)
+    implicit val personOrdering: Ordering[Person] =
+      Ordering.fromLessThan((a, b) => a.name.compareTo(b.name) < 0)
   }
 
   List(Person("Bob"), Person("Alice")).sorted // (Person.personOrdering)
   // => List(Person("Alice"), Person("Bob"))
-
 
 }

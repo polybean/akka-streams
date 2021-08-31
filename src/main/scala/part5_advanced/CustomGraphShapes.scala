@@ -2,24 +2,25 @@ package part5_advanced
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Balance, GraphDSL, Merge, RunnableGraph, Sink, Source}
 import akka.stream._
+import akka.stream.scaladsl.{Balance, GraphDSL, Merge, RunnableGraph, Sink, Source}
 
 import scala.collection.immutable
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object CustomGraphShapes extends App {
 
-  implicit val system = ActorSystem("CustomGraphShapes")
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("CustomGraphShapes")
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   // balance 2x3 shape
-  case class Balance2x3 (
-    in0: Inlet[Int],
-    in1: Inlet[Int],
-    out0: Outlet[Int],
-    out1: Outlet[Int],
-    out2: Outlet[Int]
+  case class Balance2x3(
+      in0: Inlet[Int],
+      in1: Inlet[Int],
+      out0: Outlet[Int],
+      out1: Outlet[Int],
+      out2: Outlet[Int]
   ) extends Shape {
 
     // Inlet[T], Outlet[T]
@@ -83,11 +84,14 @@ object CustomGraphShapes extends App {
 
   //  balance2x3Graph.run()
 
-  /**
-    * Exercise: generalize the balance component, make it M x N
+  /** Exercise: generalize the balance component, make it M x N
     */
-  case class BalanceMxN[T](override val inlets: List[Inlet[T]], override val outlets: List[Outlet[T]]) extends Shape {
-    override def deepCopy(): Shape = BalanceMxN(inlets.map(_.carbonCopy()), outlets.map(_.carbonCopy()))
+  case class BalanceMxN[T](
+      override val inlets: List[Inlet[T]],
+      override val outlets: List[Outlet[T]]
+  ) extends Shape {
+    override def deepCopy(): Shape =
+      BalanceMxN(inlets.map(_.carbonCopy()), outlets.map(_.carbonCopy()))
   }
 
   object BalanceMxN {

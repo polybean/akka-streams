@@ -2,13 +2,14 @@ package part3_graphs
 
 import akka.actor.ActorSystem
 import akka.stream._
-import akka.stream.scaladsl.{Broadcast, Concat, Flow, GraphDSL, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{Broadcast, Concat, Flow, GraphDSL, Sink, Source}
 
+// Close: ALL THE OPERATION/COMPONENTS' INPUTS & OUTPUTS ARE CONNECTED
+// Open: NOT ...
 object OpenGraphs extends App {
 
-  implicit val system = ActorSystem("OpenGraphs")
-  implicit val materializer = ActorMaterializer()
-
+  implicit val system: ActorSystem = ActorSystem("OpenGraphs")
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   /*
     A composite source that concatenates 2 sources
@@ -38,7 +39,6 @@ object OpenGraphs extends App {
 
   //  sourceGraph.to(Sink.foreach(println)).run()
 
-
   /*
     Complex sink
    */
@@ -64,11 +64,9 @@ object OpenGraphs extends App {
 
   //  firstSource.to(sinkGraph).run()
 
-  /**
-    * Challenge - complex flow?
-    * Write your own flow that's composed of two other flows
-    * - one that adds 1 to a number
-    * - one that does number * 10
+  /** Challenge - complex flow? Write your own flow that's composed of two other flows
+    *   - one that adds 1 to a number
+    *   - one that does number * 10
     */
   val incrementer = Flow[Int].map(_ + 1)
   val multiplier = Flow[Int].map(_ * 10)
@@ -85,6 +83,11 @@ object OpenGraphs extends App {
       val multiplierShape = builder.add(multiplier)
 
       // step 3 - connect the SHAPES
+      // You can NOT write the following because ~> is applicable to SHAPES ONLY, NOT to OPERATOR/COMPONENT
+      // builder.add(...) returns a SHAPE
+      // What IS A SHAPE??? - MAYBE A OPERATOR/COMPONENT WITHOUT A MATERIALIZED VALUE
+      // incrementer ~> multiplier
+
       incrementerShape ~> multiplierShape
 
       FlowShape(incrementerShape.in, multiplierShape.out) // SHAPE
@@ -93,9 +96,8 @@ object OpenGraphs extends App {
 
   firstSource.via(flowGraph).to(Sink.foreach(println)).run()
 
-  /**
-    Exercise: flow from a sink and a source?
-   */
+  /** Exercise: flow from a sink and a source?
+    */
   def fromSinkAndSource[A, B](sink: Sink[A, _], source: Source[B, _]): Flow[A, B, _] =
     // step 1
     Flow.fromGraph(

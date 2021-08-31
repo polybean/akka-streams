@@ -2,27 +2,28 @@ package part2_primer
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, RunnableGraph, Sink, Source}
+import akka.{Done, NotUsed}
 
 import scala.concurrent.Future
 
 object FirstPrinciples extends App {
 
-  implicit val system = ActorSystem("FirstPrinciples")
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("FirstPrinciples")
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   // sources
-  val source = Source(1 to 10)
+  val source: Source[Int, NotUsed] = Source(1 to 10)
   // sinks
-  val sink = Sink.foreach[Int](println)
+  val sink: Sink[Int, Future[Done]] = Sink.foreach[Int](println)
 
-  val graph = source.to(sink)
+  val graph: RunnableGraph[NotUsed] = source.to(sink)
   //  graph.run()
 
   // flows transform elements
-  val flow = Flow[Int].map(x => x + 1)
-  val sourceWithFlow = source.via(flow)
-  val flowWithSink = flow.to(sink)
+  val flow: Flow[Int, Int, NotUsed]#Repr[Int] = Flow[Int].map(x => x + 1)
+  val sourceWithFlow: FirstPrinciples.source.Repr[Int] = source.via(flow)
+  val flowWithSink: Sink[Int, NotUsed] = flow.to(sink)
 
   //  sourceWithFlow.to(sink).run()
   //  source.to(flowWithSink).run()
@@ -37,7 +38,9 @@ object FirstPrinciples extends App {
   val finiteSource = Source.single(1)
   val anotherFiniteSource = Source(List(1, 2, 3))
   val emptySource = Source.empty[Int]
-  val infiniteSource = Source(Stream.from(1)) // do not confuse an Akka stream with a "collection" Stream
+  val infiniteSource = Source(
+    Stream.from(1)
+  ) // do not confuse an Akka stream with a "collection" Stream
   import scala.concurrent.ExecutionContext.Implicits.global
   val futureSource = Source.fromFuture(Future(42))
 
@@ -64,9 +67,8 @@ object FirstPrinciples extends App {
 
   // OPERATORS = components
 
-  /**
-    * Exercise: create a stream that takes the names of persons, then you will keep the first 2 names with length > 5 characters.
-    *
+  /** Exercise: create a stream that takes the names of persons, then you will keep the first 2
+    * names with length > 5 characters.
     */
   val names = List("Alice", "Bob", "Charlie", "David", "Martin", "AkkaStreams")
   val nameSource = Source(names)

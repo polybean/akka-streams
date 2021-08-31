@@ -9,13 +9,15 @@ import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
-class TestingStreamsSpec extends TestKit(ActorSystem("TestingAkkaStreams"))
-  with WordSpecLike
-  with BeforeAndAfterAll {
+class TestingStreamsSpec
+    extends TestKit(ActorSystem("TestingAkkaStreams"))
+    with WordSpecLike
+    with BeforeAndAfterAll {
 
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
@@ -74,7 +76,7 @@ class TestingStreamsSpec extends TestKit(ActorSystem("TestingAkkaStreams"))
 
       val sinkUnderTest = Sink.foreach[Int] {
         case 13 => throw new RuntimeException("bad luck!")
-        case _ =>
+        case _  =>
       }
 
       val testSource = TestSource.probe[Int]

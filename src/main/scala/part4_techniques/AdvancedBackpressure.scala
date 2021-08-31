@@ -1,15 +1,16 @@
 package part4_techniques
 
-import java.util.Date
-
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.{ActorMaterializer, OverflowStrategy}
+
+import java.util.Date
+import scala.language.postfixOps
 
 object AdvancedBackpressure extends App {
 
-  implicit val system = ActorSystem("AdvancedBackpressure")
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("AdvancedBackpressure")
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   // control backpressure
   val controlledFlow = Flow[Int].map(_ * 2).buffer(10, OverflowStrategy.dropHead)
@@ -27,10 +28,13 @@ object AdvancedBackpressure extends App {
 
   val oncallEngineer = "daniel@rockthejvm.com" // a fast service for fetching oncall emails
 
-  def sendEmail(notification: Notification) =
-    println(s"Dear ${notification.email}, you have an event: ${notification.pagerEvent}") // actually send an email
+  def sendEmail(notification: Notification): Unit =
+    println(
+      s"Dear ${notification.email}, you have an event: ${notification.pagerEvent}"
+    ) // actually send an email
 
-  val notificationSink = Flow[PagerEvent].map(event => Notification(oncallEngineer, event))
+  val notificationSink = Flow[PagerEvent]
+    .map(event => Notification(oncallEngineer, event))
     .to(Sink.foreach[Notification](sendEmail))
 
   // standard
@@ -40,13 +44,15 @@ object AdvancedBackpressure extends App {
     un-backpressurable source
    */
 
-  def sendEmailSlow(notification: Notification) = {
+  def sendEmailSlow(notification: Notification): Unit = {
     Thread.sleep(1000)
-    println(s"Dear ${notification.email}, you have an event: ${notification.pagerEvent}") // actually send an email
+    println(
+      s"Dear ${notification.email}, you have an event: ${notification.pagerEvent}"
+    ) // actually send an email
   }
 
   val aggregateNotificationFlow = Flow[PagerEvent]
-    .conflate((event1, event2) =>{
+    .conflate((event1, event2) => {
       val nInstances = event1.nInstances + event2.nInstances
       PagerEvent(s"You have $nInstances events that require your attention", new Date, nInstances)
     })

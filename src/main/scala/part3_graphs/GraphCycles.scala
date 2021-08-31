@@ -1,13 +1,13 @@
 package part3_graphs
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, MergePreferred, RunnableGraph, Sink, Source, Zip, ZipWith}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, MergePreferred, Source, Zip, ZipWith}
 import akka.stream.{ActorMaterializer, ClosedShape, OverflowStrategy, UniformFanInShape}
 
 object GraphCycles extends App {
 
-  implicit val system = ActorSystem("GraphCycles")
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("GraphCycles")
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val accelerator = GraphDSL.create() { implicit builder =>
     import GraphDSL.Implicits._
@@ -19,8 +19,8 @@ object GraphCycles extends App {
       x + 1
     })
 
-    sourceShape ~>  mergeShape ~> incrementerShape
-                    mergeShape <~ incrementerShape
+    sourceShape ~> mergeShape ~> incrementerShape
+    mergeShape <~ incrementerShape
 
     ClosedShape
   }
@@ -41,14 +41,13 @@ object GraphCycles extends App {
       x + 1
     })
 
-    sourceShape ~>  mergeShape ~> incrementerShape
+    sourceShape ~> mergeShape ~> incrementerShape
     mergeShape.preferred <~ incrementerShape
 
     ClosedShape
   }
 
   //  RunnableGraph.fromGraph(actualAccelerator).run()
-
 
   /*
     Solution 2: buffers
@@ -64,7 +63,7 @@ object GraphCycles extends App {
       x
     })
 
-    sourceShape ~>  mergeShape ~> repeaterShape
+    sourceShape ~> mergeShape ~> repeaterShape
     mergeShape <~ repeaterShape
 
     ClosedShape
@@ -79,11 +78,10 @@ object GraphCycles extends App {
     boundedness vs liveness
    */
 
-  /**
-    * Challenge: create a fan-in shape
-    * - two inputs which will be fed with EXACTLY ONE number (1 and 1)
-    * - output will emit an INFINITE FIBONACCI SEQUENCE based off those 2 numbers
-    * 1, 2, 3, 5, 8 ...
+  /** Challenge: create a fan-in shape
+    *   - two inputs which will be fed with EXACTLY ONE number (1 and 1)
+    *   - output will emit an INFINITE FIBONACCI SEQUENCE based off those 2 numbers 1, 2, 3, 5, 8
+    *     ...
     *
     * Hint: Use ZipWith and cycles, MergePreferred
     */
@@ -104,8 +102,8 @@ object GraphCycles extends App {
     val broadcast = builder.add(Broadcast[(BigInt, BigInt)](2))
     val extractLast = builder.add(Flow[(BigInt, BigInt)].map(_._1))
 
-    zip.out ~>    mergePreferred        ~> fiboLogic ~> broadcast ~> extractLast
-                  mergePreferred.preferred     <~       broadcast
+    zip.out ~> mergePreferred ~> fiboLogic ~> broadcast ~> extractLast
+    mergePreferred.preferred <~ broadcast
 
     UniformFanInShape(extractLast.out, zip.in0, zip.in1)
   }
@@ -129,10 +127,7 @@ object GraphCycles extends App {
 //
 //  fiboGraph.run()
 
-  /**
-    * ********************
-    * Old solution (more complicated)
-    * ********************
+  /** ******************** Old solution (more complicated) ********************
     */
 
   val complicatedFibonacciGenerator = GraphDSL.create() { implicit builder =>
@@ -147,7 +142,7 @@ object GraphCycles extends App {
       - the final output of the shape
       - a zip to sum with the previousFeed
       - a feedback loop to the previousFeed (the current "last" will become the next "previous")
-    */
+     */
     val broadcastLast = builder.add(Broadcast[BigInt](3))
 
     // the actual Fibonacci logic
@@ -158,17 +153,17 @@ object GraphCycles extends App {
 
     // hopefully connections are traceable on paper
 
-                broadcastLast ~>  previousFeed.preferred // feedback loop: current "last" becomes next "previous"
-    lastFeed ~> broadcastLast ~>  fiboLogic.in0
-                previousFeed  ~>  fiboLogic.in1
-    lastFeed.preferred        <~  fiboLogic.out // feedback loop: next "last" is the sum of current "last" and "previous"
+    broadcastLast ~> previousFeed.preferred // feedback loop: current "last" becomes next "previous"
+    lastFeed ~> broadcastLast ~> fiboLogic.in0
+    previousFeed ~> fiboLogic.in1
+    lastFeed.preferred <~ fiboLogic.out // feedback loop: next "last" is the sum of current "last" and "previous"
 
     UniformFanInShape(
-      broadcastLast.out(2),   // the unconnected output
+      broadcastLast.out(2), // the unconnected output
       lastFeed.in(0),
-      previousFeed.in(0)      // and the regular ports of the MergePreferred components
+      previousFeed.in(0) // and the regular ports of the MergePreferred components
     )
 
-    // So as you can see, quite involved. But it gives the same output!
+  // So as you can see, quite involved. But it gives the same output!
   }
 }

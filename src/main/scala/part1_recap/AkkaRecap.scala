@@ -4,6 +4,8 @@ import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorLogging, ActorSystem, OneForOneStrategy, PoisonPill, Props, Stash, SupervisorStrategy}
 import akka.util.Timeout
 
+import scala.language.postfixOps
+
 object AkkaRecap extends App {
 
   class SimpleActor extends Actor with ActorLogging with Stash {
@@ -18,11 +20,11 @@ object AkkaRecap extends App {
         context.become(anotherHandler)
 
       case "change" => context.become(anotherHandler)
-      case message => println(s"I received: $message")
+      case message  => println(s"I received: $message")
     }
 
-    def anotherHandler: Receive = {
-      case message => println(s"In another receive handler: $message")
+    def anotherHandler: Receive = { case message =>
+      println(s"In another receive handler: $message")
     }
 
     override def preStart(): Unit = {
@@ -31,7 +33,7 @@ object AkkaRecap extends App {
 
     override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
       case _: RuntimeException => Restart
-      case _ => Stop
+      case _                   => Stop
     }
   }
 
@@ -63,15 +65,16 @@ object AkkaRecap extends App {
   // configure Akka infrastructure: dispatchers, routers, mailboxes
 
   // schedulers
-  import scala.concurrent.duration._
   import system.dispatcher
+
+  import scala.concurrent.duration._
   system.scheduler.scheduleOnce(2 seconds) {
     actor ! "delayed happy birthday!"
   }
 
   // Akka patterns including FSM + ask pattern
   import akka.pattern.ask
-  implicit val timeout = Timeout(3 seconds)
+  implicit val timeout: Timeout = Timeout(3 seconds)
 
   val future = actor ? "question"
 
